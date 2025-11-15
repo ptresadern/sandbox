@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Upload - Media Gallery{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <h1>Upload Media</h1>
+
+    <div class="info-box">
+        <p><strong>Storage Type:</strong> {{ storage_type|upper }}</p>
+        <p><strong>Allowed formats:</strong> Images (PNG, JPG, GIF, BMP, WebP) and Videos (MP4, AVI, MOV, WMV, FLV, MKV, WebM)</p>
+        <p><strong>Max file size:</strong> 500MB per file</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data" id="upload-form">
+        <div class="form-group">
+            <label for="files" class="file-label">
+                <span class="file-icon">📁</span>
+                <span>Choose files or drag and drop here</span>
+            </label>
+            <input type="file" id="files" name="files" multiple accept="image/*,video/*" required>
+        </div>
+
+        <div id="file-list" class="file-list"></div>
+
+        <button type="submit" class="btn btn-primary btn-large" id="upload-btn">Upload Files</button>
+    </form>
+</div>
+
+<script>
+    const fileInput = document.getElementById('files');
+    const fileList = document.getElementById('file-list');
+    const uploadBtn = document.getElementById('upload-btn');
+
+    fileInput.addEventListener('change', function(e) {
+        fileList.innerHTML = '';
+        const files = Array.from(e.target.files);
+
+        if (files.length > 0) {
+            const heading = document.createElement('h3');
+            heading.textContent = `Selected files (${files.length}):`;
+            fileList.appendChild(heading);
+
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+    });
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Drag and drop
+    const form = document.getElementById('upload-form');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        form.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        form.addEventListener(eventName, () => {
+            form.classList.add('drag-over');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        form.addEventListener(eventName, () => {
+            form.classList.remove('drag-over');
+        }, false);
+    });
+
+    form.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        fileInput.dispatchEvent(new Event('change'));
+    });
+</script>
+{% endblock %}
