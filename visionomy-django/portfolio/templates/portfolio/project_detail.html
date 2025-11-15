@@ -1,0 +1,113 @@
+{% extends 'portfolio/base.html' %}
+
+{% block title %}{{ project.title }} - Portfolio{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="project-detail">
+        <div class="project-header">
+            <a href="{% url 'project_list' %}" class="back-link">&larr; Back to Projects</a>
+            <h1>{{ project.title }}</h1>
+            <p class="project-date">{{ project.date|date:"F Y" }}</p>
+
+            <div class="project-tags">
+                {% for tag in project.tags.all %}
+                    <a href="{% url 'project_list' %}?tag={{ tag.slug }}" class="tag-badge">{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+
+            <div class="project-links">
+                {% if project.github_url %}
+                    <a href="{{ project.github_url }}" target="_blank" class="btn btn-github">View on GitHub</a>
+                {% endif %}
+                {% if project.demo_url %}
+                    <a href="{{ project.demo_url }}" target="_blank" class="btn btn-demo">Live Demo</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="project-content">
+            <section class="description-section">
+                <h2>Description</h2>
+                <div class="description">
+                    {{ project.description|linebreaks }}
+                </div>
+            </section>
+
+            {% if project.images.all %}
+                <section class="images-section">
+                    <h2>Images</h2>
+                    <div class="images-gallery">
+                        {% for image in project.images.all %}
+                            <div class="gallery-item">
+                                <img src="{{ image.image.url }}" alt="{{ image.caption }}">
+                                {% if image.caption %}
+                                    <p class="caption">{{ image.caption }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            {% if project.videos.all %}
+                <section class="videos-section">
+                    <h2>Videos</h2>
+                    <div class="videos-gallery">
+                        {% for video in project.videos.all %}
+                            <div class="video-item">
+                                {% if video.video_url %}
+                                    {% if 'youtube.com' in video.video_url or 'youtu.be' in video.video_url %}
+                                        <div class="video-responsive">
+                                            <iframe src="{{ video.video_url }}" frameborder="0" allowfullscreen></iframe>
+                                        </div>
+                                    {% else %}
+                                        <a href="{{ video.video_url }}" target="_blank">Watch Video</a>
+                                    {% endif %}
+                                {% elif video.video %}
+                                    <video controls>
+                                        <source src="{{ video.video.url }}">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                {% endif %}
+                                {% if video.caption %}
+                                    <p class="caption">{{ video.caption }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            {% if project.publications.all %}
+                <section class="publications-section">
+                    <h2>Publications</h2>
+                    <div class="publications-list">
+                        {% for pub in project.publications.all %}
+                            <div class="publication-item">
+                                <h3>{{ pub.title }}</h3>
+                                <p class="pub-meta">
+                                    <strong>Authors:</strong> {{ pub.authors }}<br>
+                                    <strong>Venue:</strong> {{ pub.venue }}<br>
+                                    <strong>Year:</strong> {{ pub.year }}
+                                </p>
+                                {% if pub.abstract %}
+                                    <p class="pub-abstract">{{ pub.abstract }}</p>
+                                {% endif %}
+                                <div class="pub-links">
+                                    {% if pub.url %}
+                                        <a href="{{ pub.url }}" target="_blank" class="btn btn-small">View Online</a>
+                                    {% endif %}
+                                    {% if pub.pdf %}
+                                        <a href="{{ pub.pdf.url }}" target="_blank" class="btn btn-small">Download PDF</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

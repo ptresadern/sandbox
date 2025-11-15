@@ -1,0 +1,80 @@
+{% extends 'portfolio/base.html' %}
+
+{% block title %}Projects - Portfolio{% endblock %}
+
+{% block content %}
+<div class="container">
+    <section class="hero">
+        <h1>Software Development Projects</h1>
+        <p>Explore my portfolio of software development work</p>
+    </section>
+
+    <div class="filter-section">
+        <form method="get" class="search-form">
+            <input type="text" name="q" placeholder="Search projects..." value="{{ search_query|default:'' }}">
+            <button type="submit">Search</button>
+        </form>
+
+        <div class="tags-filter">
+            <h3>Filter by Tag:</h3>
+            <div class="tags">
+                <a href="{% url 'project_list' %}" class="tag {% if not selected_tag %}active{% endif %}">All</a>
+                {% for tag in all_tags %}
+                    <a href="?tag={{ tag.slug }}" class="tag {% if selected_tag.slug == tag.slug %}active{% endif %}">
+                        {{ tag.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% if selected_tag %}
+        <div class="filter-info">
+            <p>Showing projects tagged with: <strong>{{ selected_tag.name }}</strong>
+               <a href="{% url 'project_list' %}">Clear filter</a>
+            </p>
+        </div>
+    {% endif %}
+
+    {% if search_query %}
+        <div class="filter-info">
+            <p>Search results for: <strong>{{ search_query }}</strong></p>
+        </div>
+    {% endif %}
+
+    <div class="projects-grid">
+        {% for project in projects %}
+            <div class="project-card">
+                <a href="{% url 'project_detail' project.slug %}">
+                    <div class="project-thumbnail">
+                        {% if project.thumbnail %}
+                            <img src="{{ project.thumbnail.url }}" alt="{{ project.title }}">
+                        {% else %}
+                            <div class="placeholder-thumbnail">
+                                <span>{{ project.title|slice:":1" }}</span>
+                            </div>
+                        {% endif %}
+                        {% if project.featured %}
+                            <span class="featured-badge">Featured</span>
+                        {% endif %}
+                    </div>
+                    <div class="project-info">
+                        <h2>{{ project.title }}</h2>
+                        <p class="project-date">{{ project.date|date:"F Y" }}</p>
+                        <p class="project-description">{{ project.short_description }}</p>
+                        <div class="project-tags">
+                            {% for tag in project.tags.all %}
+                                <span class="tag-badge">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% empty %}
+            <div class="no-results">
+                <p>No projects found.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
