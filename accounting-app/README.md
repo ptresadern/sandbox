@@ -5,6 +5,7 @@ A standalone desktop accounting application built with Python and tkinter for tr
 ## Features
 
 - **Transaction Management**: Add, view, and delete income and expense transactions
+- **Receipt Scanning** (NEW): Upload receipt images to automatically extract transaction details
 - **SQLite Database**: All data is stored locally in a SQLite database
 - **Category-based Tracking**: Organize transactions by predefined or custom categories
 - **Dashboard**: View summary statistics including total income, expenses, and net balance
@@ -15,16 +16,49 @@ A standalone desktop accounting application built with Python and tkinter for tr
 ## Requirements
 
 - Python 3.6 or higher
-- Built-in Python libraries only (no external dependencies):
+- Built-in Python libraries:
   - tkinter (usually included with Python)
   - sqlite3 (included with Python)
   - datetime (included with Python)
+- External packages (for receipt scanning feature):
+  - Pillow: `pip install Pillow`
+  - pytesseract: `pip install pytesseract`
+  - Tesseract OCR engine (system dependency - see installation below)
 
 ## Installation
 
+### Basic Installation
+
 1. Clone or download this repository
 2. Ensure Python 3.6+ is installed on your system
-3. No additional package installation required
+3. Install required Python packages:
+```bash
+pip install -r requirements.txt
+```
+
+Or install manually:
+```bash
+pip install Pillow pytesseract
+```
+
+### Receipt Scanning Setup (Optional)
+
+To use the receipt scanning feature, install Tesseract OCR:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install tesseract-ocr
+```
+
+**macOS:**
+```bash
+brew install tesseract
+```
+
+**Windows:**
+Download and install from: https://github.com/UB-Mannheim/tesseract/wiki
+
+The app will work without Tesseract, but receipt scanning will not be available.
 
 ## Usage
 
@@ -43,6 +77,7 @@ python accounting_app.py
 
 #### Adding Transactions
 
+**Manual Entry:**
 1. Navigate to the "Add Transaction" tab
 2. Select transaction type (Income or Expense)
 3. Enter the date in YYYY-MM-DD format
@@ -50,6 +85,24 @@ python accounting_app.py
 5. Enter the amount (positive number)
 6. Optionally add a description
 7. Click "Add Transaction"
+
+**Receipt Scanning (Auto-fill):**
+1. Navigate to the "Add Transaction" tab
+2. Click "Select Receipt Image" button
+3. Choose a receipt image (JPG, PNG, etc.)
+4. The app will automatically extract and fill in:
+   - Transaction date
+   - Amount paid
+   - Merchant name (as description)
+   - Suggested category based on merchant type
+5. Review the auto-filled information
+6. Make any necessary adjustments
+7. Click "Add Transaction"
+
+**Supported Receipt Image Formats:**
+- PNG, JPG, JPEG, GIF, BMP, TIFF
+- Clear, well-lit images work best
+- Avoid blurry or skewed images
 
 **Income Categories:**
 - Salary
@@ -95,6 +148,8 @@ accounting_app/
 ├── accounting_app.py    # Main GUI application
 ├── database.py          # Database operations and queries
 ├── reports.py           # Report generation functionality
+├── receipt_parser.py    # OCR-based receipt scanning
+├── test_app.py          # Test suite
 ├── accounting.db        # SQLite database (created on first run)
 └── README.md           # This file
 ```
@@ -131,6 +186,17 @@ The `ReportGenerator` class provides:
 - Detailed transaction listings
 - Percentage calculations
 - File export functionality
+
+### Receipt Parser Module (receipt_parser.py)
+
+The `ReceiptParser` class provides:
+- OCR text extraction from receipt images using Tesseract
+- Intelligent parsing of:
+  - Total amount (handles multiple currency formats)
+  - Transaction date (supports various date formats)
+  - Merchant name (extracted from top of receipt)
+- Smart category suggestion based on merchant/keywords
+- Graceful error handling when OCR is unavailable
 
 ### GUI Application (accounting_app.py)
 

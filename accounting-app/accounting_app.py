@@ -3,10 +3,11 @@ Main accounting application with tkinter GUI.
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
+from tkinter import ttk, messagebox, scrolledtext, filedialog
 from datetime import datetime
 from database import AccountingDB
 from reports import ReportGenerator
+from receipt_parser import ReceiptParser
 
 
 class AccountingApp:
@@ -21,6 +22,7 @@ class AccountingApp:
         # Initialize database and reports
         self.db = AccountingDB()
         self.report_gen = ReportGenerator(self.db)
+        self.receipt_parser = ReceiptParser()
 
         # Common categories
         self.income_categories = [
@@ -191,6 +193,32 @@ class AccountingApp:
         ttk.Entry(form_frame, textvariable=self.description_var, width=30).grid(
             row=4, column=1, sticky='w', pady=5
         )
+
+        # Receipt scanning section
+        receipt_frame = ttk.LabelFrame(add_frame, text="📷 Scan Receipt (Auto-fill)", padding=15)
+        receipt_frame.pack(fill='x', padx=20, pady=10)
+
+        ttk.Label(
+            receipt_frame,
+            text="Upload a receipt image to automatically extract transaction details"
+        ).pack(pady=5)
+
+        scan_button_frame = ttk.Frame(receipt_frame)
+        scan_button_frame.pack(pady=5)
+
+        ttk.Button(
+            scan_button_frame,
+            text="📁 Select Receipt Image",
+            command=self.scan_receipt
+        ).pack(side='left', padx=5)
+
+        self.ocr_status_label = tk.Label(
+            receipt_frame,
+            text="",
+            font=("Arial", 9),
+            fg="gray"
+        )
+        self.ocr_status_label.pack(pady=5)
 
         # Buttons
         button_frame = ttk.Frame(add_frame)
@@ -379,6 +407,106 @@ class AccountingApp:
         self.description_var.set("")
         if self.category_combo['values']:
             self.category_var.set(self.category_combo['values'][0])
+
+    def scan_receipt(self):
+        """Scan a receipt image and auto-fill transaction fields."""
+        # Update status
+        self.ocr_status_label.config(text="Select a receipt image...", fg="gray")
+
+        # Open file dialog
+        file_path = filedialog.askopenfilename(
+            title="Select Receipt Image",
+            filetypes=[
+                ("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.tiff"),
+                ("All files", "*.*")
+            ]
+        )
+
+        if not file_path:
+            self.ocr_status_label.config(text="", fg="gray")
+            return
+
+        # Update status
+        self.ocr_status_label.config(text="Processing receipt...", fg="blue")
+        self.root.update()
+
+        try:
+            # Parse the receipt
+            result = self.receipt_parser.parse_receipt(file_path)
+
+            if result['error']:
+                self.ocr_status_label.config(
+                    text=f"Error: {result['error']}",
+                    fg="red"
+                )
+
+                # Show detailed error message
+                if "Tesseract" in result['error']:
+                    messagebox.showwarning(
+                        "OCR Not Available",
+                        result['error'] + "\n\nThe receipt scanning feature requires "
+                        "Tesseract OCR to be installed on your system."
+                    )
+                else:
+                    messagebox.showerror("Scanning Error", result['error'])
+                return
+
+            # Auto-fill fields
+            fields_filled = []
+
+            if result['date']:
+                self.date_var.set(result['date'])
+                fields_filled.append("date")
+
+            if result['amount']:
+                self.amount_var.set(f"{result['amount']:.2f}")
+                fields_filled.append("amount")
+
+            if result['merchant']:
+                # Use merchant name as description
+                self.description_var.set(result['merchant'])
+                fields_filled.append("description")
+
+                # Try to suggest a category based on merchant
+                suggested_category, suggested_type = self.receipt_parser.suggest_category(
+                    result['merchant'],
+                    result['raw_text']
+                )
+
+                # Set transaction type
+                self.trans_type_var.set(suggested_type)
+                self.update_category_list()
+
+                # Set category
+                if suggested_category:
+                    self.category_var.set(suggested_category)
+                    fields_filled.append("category")
+
+            # Update status
+            if fields_filled:
+                status_msg = f"✓ Auto-filled: {', '.join(fields_filled)}"
+                self.ocr_status_label.config(text=status_msg, fg="green")
+
+                messagebox.showinfo(
+                    "Receipt Scanned",
+                    f"Successfully extracted data from receipt!\n\n"
+                    f"Fields auto-filled: {', '.join(fields_filled)}\n\n"
+                    f"Please review the information before adding the transaction."
+                )
+            else:
+                self.ocr_status_label.config(
+                    text="Could not extract data from receipt",
+                    fg="orange"
+                )
+                messagebox.showwarning(
+                    "Limited Data",
+                    "Could not extract sufficient data from the receipt.\n"
+                    "Please fill in the fields manually."
+                )
+
+        except Exception as e:
+            self.ocr_status_label.config(text=f"Error: {str(e)}", fg="red")
+            messagebox.showerror("Error", f"Failed to scan receipt: {str(e)}")
 
     def add_transaction(self):
         """Add a new transaction to the database."""
