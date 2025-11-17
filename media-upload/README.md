@@ -4,13 +4,15 @@ A secure, password-protected web application for uploading, viewing, and managin
 
 ## Features
 
-- **Password Authentication**: Secure login system to protect your media
+- **Role-Based Authentication**: Two-tier access control with admin and user roles
+  - **Admin**: Full access including file downloads and management
+  - **User**: View-only access for browsing media
 - **Multi-file Upload**: Upload multiple photos and videos simultaneously
 - **Dual Storage Options**: Store files locally or on AWS S3
-- **Gallery View**: Beautiful grid layout to browse your media
+- **Gallery View**: Beautiful grid layout to browse your media with adjustable columns (2-6 columns)
 - **Media Viewer**: Click to view full-size images and play videos
-- **Admin Panel**: Manage all uploaded media with easy download options
-- **Bulk Download**: Download selected files or all files as a ZIP archive
+- **Admin Panel**: Manage all uploaded media with easy download options (admin only)
+- **Bulk Download**: Download selected files or all files as a ZIP archive (admin only)
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 
 ## Supported File Formats
@@ -48,9 +50,15 @@ A secure, password-protected web application for uploading, viewing, and managin
    ### Basic Configuration
    ```env
    SECRET_KEY=your-secret-key-here-change-this
-   ADMIN_USERNAME=admin
-   ADMIN_PASSWORD=your-secure-password
+   ADMIN_PASSWORD=your-secure-admin-password
+   USER_PASSWORD=your-secure-user-password
    ```
+
+   **Default User Accounts:**
+   - Admin user: username `admin` (configurable password)
+   - Regular user: username `user` (configurable password)
+
+   See the "User Management" section below for adding additional users.
 
    ### Storage Configuration
 
@@ -85,9 +93,15 @@ A secure, password-protected web application for uploading, viewing, and managin
 
 3. **Login**
 
-   Use the credentials you set in the `.env` file:
-   - Username: `admin` (or your custom username)
-   - Password: `admin123` (or your custom password)
+   Use one of the following credentials:
+
+   **Admin Account (Full Access):**
+   - Username: `admin`
+   - Password: Set in `.env` as `ADMIN_PASSWORD` (default: `admin123`)
+
+   **User Account (View Only):**
+   - Username: `user`
+   - Password: Set in `.env` as `USER_PASSWORD` (default: `user123`)
 
 ## Usage Guide
 
@@ -102,10 +116,14 @@ A secure, password-protected web application for uploading, viewing, and managin
 ### Viewing Media
 
 1. Click **Gallery** to see all uploaded media
-2. Click on any image or video to view it full-size
-3. Use the close button (×) or press ESC to close the viewer
+2. Use the **Columns** dropdown to adjust the gallery layout (2-6 columns)
+   - Your preference is saved automatically in your browser
+3. Click on any image or video to view it full-size
+4. Use the close button (×) or press ESC to close the viewer
 
-### Admin Features
+### Admin Features (Admin Role Only)
+
+The Admin panel is only accessible to users with the admin role.
 
 1. Click **Admin** to access the admin panel
 2. **Download Individual Files**: Click the Download button for any file
@@ -113,6 +131,85 @@ A secure, password-protected web application for uploading, viewing, and managin
    - Check the boxes next to files you want
    - Click "Download Selected"
 4. **Download All Files**: Click "Download All" to get everything as a ZIP
+
+**Note**: Regular users can view and upload media but cannot download files.
+
+## User Management
+
+### User Roles
+
+The application supports two types of user roles:
+
+1. **Admin Role**
+   - Full access to all features
+   - Can upload and view media
+   - Can access the Admin panel
+   - Can download individual files, selected files, or all files
+   - Can see the Admin navigation link
+
+2. **User Role** (Non-Admin)
+   - Can upload media files
+   - Can view media in the gallery
+   - **Cannot** download files
+   - **Cannot** access the Admin panel
+   - Admin link is hidden from navigation
+
+### Adding New Users
+
+To add new users with non-admin rights, edit the `config.py` file:
+
+1. Open `media-upload/config.py` in a text editor
+
+2. Locate the `USERS` dictionary (around line 13)
+
+3. Add a new user entry following this format:
+
+```python
+USERS = {
+    'admin': {
+        'password': os.getenv('ADMIN_PASSWORD', 'admin123'),
+        'role': 'admin'
+    },
+    'user': {
+        'password': os.getenv('USER_PASSWORD', 'user123'),
+        'role': 'user'
+    },
+    # Add your new user here
+    'newusername': {
+        'password': 'secure-password-here',  # Or use os.getenv('NEW_USER_PASSWORD', 'default')
+        'role': 'user'  # Use 'user' for non-admin, 'admin' for admin
+    }
+}
+```
+
+4. Save the file and restart the application
+
+### Using Environment Variables for User Passwords
+
+For better security, store passwords in environment variables:
+
+1. Add to your `.env` file:
+```env
+ADMIN_PASSWORD=your-secure-admin-password
+USER_PASSWORD=your-secure-user-password
+NEW_USER_PASSWORD=another-secure-password
+```
+
+2. Update `config.py` to reference the environment variable:
+```python
+'newusername': {
+    'password': os.getenv('NEW_USER_PASSWORD', 'default-password'),
+    'role': 'user'
+}
+```
+
+### Best Practices for User Management
+
+- Always use strong, unique passwords for each user
+- Use environment variables for passwords in production
+- Regularly review and remove unused accounts
+- Consider implementing password hashing for production use
+- Document who has admin access
 
 ## AWS S3 Setup (Optional)
 
@@ -151,11 +248,13 @@ If you want to use AWS S3 for storage:
 
 ### Important Security Notes
 
-1. **Change Default Password**: Always change the default admin password in production
+1. **Change Default Passwords**: Always change all default passwords in production
 2. **Use Strong Secret Key**: Generate a strong, random SECRET_KEY
 3. **HTTPS in Production**: Always use HTTPS in production environments
 4. **Secure AWS Credentials**: Never commit AWS credentials to version control
 5. **File Size Limits**: Default max file size is 500MB (configurable in `config.py`)
+6. **Password Storage**: Consider implementing password hashing (bcrypt, werkzeug) for production
+7. **Environment Variables**: Store all sensitive credentials in environment variables, not in code
 
 ### Generating a Secure Secret Key
 
@@ -218,9 +317,21 @@ media-gallery/
 - Ensure bucket region matches `.env` setting
 
 ### Login not working
-- Verify credentials in `.env` file
+- Verify credentials in `.env` file or `config.py`
 - Check that `.env` file exists and is being read
+- Ensure the username exists in the USERS dictionary in `config.py`
 - Clear browser cookies and try again
+- Check Flask console for error messages
+
+### Can't access Admin panel
+- Verify you're logged in with an admin role account
+- Check that the user's role is set to 'admin' in `config.py`
+- Non-admin users cannot access the Admin panel by design
+
+### Column selector not working
+- Ensure JavaScript is enabled in your browser
+- Check browser console for errors
+- Try clearing browser localStorage and refreshing
 
 ## Contributing
 
