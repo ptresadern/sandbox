@@ -8,6 +8,7 @@ from datetime import datetime
 from database import AccountingDB
 from reports import ReportGenerator
 from receipt_parser import ReceiptParser
+from statement_parser import BankStatementParser
 
 
 class AccountingApp:
@@ -23,6 +24,7 @@ class AccountingApp:
         self.db = AccountingDB()
         self.report_gen = ReportGenerator(self.db)
         self.receipt_parser = ReceiptParser()
+        self.statement_parser = BankStatementParser()
 
         # Common categories
         self.income_categories = [
@@ -47,6 +49,7 @@ class AccountingApp:
         # Create tabs
         self.create_dashboard_tab()
         self.create_add_transaction_tab()
+        self.create_import_statement_tab()
         self.create_transactions_tab()
         self.create_reports_tab()
 
@@ -235,6 +238,101 @@ class AccountingApp:
             text="Clear Form",
             command=self.clear_form
         ).pack(side='left', padx=5)
+
+    def create_import_statement_tab(self):
+        """Create tab for importing bank statements."""
+        import_frame = ttk.Frame(self.notebook)
+        self.notebook.add(import_frame, text="Import Statement")
+
+        # Title
+        title_label = tk.Label(
+            import_frame,
+            text="Import Bank Statement",
+            font=("Arial", 14, "bold")
+        )
+        title_label.pack(pady=10)
+
+        # Instructions
+        instructions = ttk.LabelFrame(import_frame, text="Instructions", padding=15)
+        instructions.pack(fill='x', padx=20, pady=10)
+
+        ttk.Label(
+            instructions,
+            text="Upload a PDF bank statement to automatically import all transactions.\n"
+                 "The app will extract: Date, Amount, Payee/Description, and Account Number.",
+            font=("Arial", 10)
+        ).pack(pady=5)
+
+        # Upload section
+        upload_frame = ttk.LabelFrame(import_frame, text="Upload Statement", padding=15)
+        upload_frame.pack(fill='x', padx=20, pady=10)
+
+        ttk.Button(
+            upload_frame,
+            text="📄 Select PDF Bank Statement",
+            command=self.import_bank_statement
+        ).pack(pady=10)
+
+        self.import_status_label = tk.Label(
+            upload_frame,
+            text="",
+            font=("Arial", 9),
+            fg="gray"
+        )
+        self.import_status_label.pack(pady=5)
+
+        # Preview frame
+        preview_frame = ttk.LabelFrame(import_frame, text="Preview Transactions", padding=10)
+        preview_frame.pack(fill='both', expand=True, padx=20, pady=10)
+
+        # Treeview for preview
+        tree_scroll = ttk.Scrollbar(preview_frame)
+        tree_scroll.pack(side='right', fill='y')
+
+        self.import_preview_tree = ttk.Treeview(
+            preview_frame,
+            columns=('Date', 'Description', 'Amount', 'Type', 'Category'),
+            show='headings',
+            yscrollcommand=tree_scroll.set
+        )
+        tree_scroll.config(command=self.import_preview_tree.yview)
+
+        # Define columns
+        self.import_preview_tree.heading('Date', text='Date')
+        self.import_preview_tree.heading('Description', text='Description')
+        self.import_preview_tree.heading('Amount', text='Amount')
+        self.import_preview_tree.heading('Type', text='Type')
+        self.import_preview_tree.heading('Category', text='Category')
+
+        # Set column widths
+        self.import_preview_tree.column('Date', width=100)
+        self.import_preview_tree.column('Description', width=300)
+        self.import_preview_tree.column('Amount', width=100)
+        self.import_preview_tree.column('Type', width=80)
+        self.import_preview_tree.column('Category', width=120)
+
+        self.import_preview_tree.pack(fill='both', expand=True)
+
+        # Import button
+        import_button_frame = ttk.Frame(import_frame)
+        import_button_frame.pack(pady=10)
+
+        self.import_all_button = ttk.Button(
+            import_button_frame,
+            text="Import All Transactions",
+            command=self.import_all_transactions,
+            state='disabled'
+        )
+        self.import_all_button.pack(side='left', padx=5)
+
+        ttk.Button(
+            import_button_frame,
+            text="Clear Preview",
+            command=self.clear_import_preview
+        ).pack(side='left', padx=5)
+
+        # Store pending transactions
+        self.pending_transactions = []
 
     def create_transactions_tab(self):
         """Create tab for viewing all transactions."""
@@ -681,6 +779,156 @@ class AccountingApp:
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to export report: {str(e)}")
+
+    def import_bank_statement(self):
+        """Import bank statement PDF and parse transactions."""
+        # Update status
+        self.import_status_label.config(text="Select a PDF bank statement...", fg="gray")
+
+        # Open file dialog
+        file_path = filedialog.askopenfilename(
+            title="Select Bank Statement PDF",
+            filetypes=[
+                ("PDF files", "*.pdf"),
+                ("All files", "*.*")
+            ]
+        )
+
+        if not file_path:
+            self.import_status_label.config(text="", fg="gray")
+            return
+
+        # Update status
+        self.import_status_label.config(text="Parsing bank statement...", fg="blue")
+        self.root.update()
+
+        try:
+            # Parse the statement
+            result = self.statement_parser.parse_statement(file_path)
+
+            if result['error']:
+                self.import_status_label.config(
+                    text=f"Error: {result['error']}",
+                    fg="red"
+                )
+                messagebox.showerror("Parsing Error", result['error'])
+                return
+
+            # Store transactions for preview
+            self.pending_transactions = result['transactions']
+
+            # Clear preview tree
+            for item in self.import_preview_tree.get_children():
+                self.import_preview_tree.delete(item)
+
+            # Add transactions to preview
+            for trans in self.pending_transactions:
+                amount_str = f"${trans['amount']:.2f}"
+                if trans['type'] == 'expense':
+                    amount_str = f"-{amount_str}"
+                else:
+                    amount_str = f"+{amount_str}"
+
+                self.import_preview_tree.insert('', 'end', values=(
+                    trans['date'],
+                    trans['description'][:50],  # Truncate long descriptions
+                    amount_str,
+                    trans['type'].capitalize(),
+                    trans['category']
+                ))
+
+            # Update status
+            count = len(self.pending_transactions)
+            account = result['account_number'] or 'Unknown'
+
+            status_msg = f"✓ Found {count} transactions from account {account}"
+            self.import_status_label.config(text=status_msg, fg="green")
+
+            # Enable import button
+            if count > 0:
+                self.import_all_button.config(state='normal')
+
+            # Show summary
+            messagebox.showinfo(
+                "Statement Parsed",
+                f"Successfully parsed bank statement!\n\n"
+                f"Account: {account}\n"
+                f"Transactions found: {count}\n"
+                f"Statement period: {result['statement_period']['start_date']} to "
+                f"{result['statement_period']['end_date']}\n\n"
+                f"Review the transactions in the preview and click 'Import All Transactions' to add them."
+            )
+
+        except Exception as e:
+            self.import_status_label.config(text=f"Error: {str(e)}", fg="red")
+            messagebox.showerror("Error", f"Failed to parse statement: {str(e)}")
+
+    def import_all_transactions(self):
+        """Import all pending transactions to the database."""
+        if not self.pending_transactions:
+            messagebox.showwarning("Warning", "No transactions to import.")
+            return
+
+        # Confirm import
+        count = len(self.pending_transactions)
+        if not messagebox.askyesno(
+            "Confirm Import",
+            f"Import {count} transactions to the database?\n\n"
+            f"This action cannot be undone."
+        ):
+            return
+
+        try:
+            imported = 0
+            failed = 0
+
+            for trans in self.pending_transactions:
+                try:
+                    self.db.add_transaction(
+                        trans['date'],
+                        trans['type'],
+                        trans['category'],
+                        trans['amount'],
+                        trans['description']
+                    )
+                    imported += 1
+                except Exception as e:
+                    failed += 1
+                    print(f"Failed to import transaction: {e}")
+
+            # Clear pending transactions
+            self.pending_transactions = []
+            self.clear_import_preview()
+            self.import_all_button.config(state='disabled')
+
+            # Refresh transaction list and summary
+            self.refresh_transaction_list()
+            self.update_summary()
+
+            # Show result
+            if failed == 0:
+                messagebox.showinfo(
+                    "Import Complete",
+                    f"Successfully imported {imported} transactions!"
+                )
+            else:
+                messagebox.showwarning(
+                    "Import Complete with Errors",
+                    f"Imported: {imported} transactions\n"
+                    f"Failed: {failed} transactions"
+                )
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import transactions: {str(e)}")
+
+    def clear_import_preview(self):
+        """Clear the import preview tree."""
+        for item in self.import_preview_tree.get_children():
+            self.import_preview_tree.delete(item)
+
+        self.pending_transactions = []
+        self.import_all_button.config(state='disabled')
+        self.import_status_label.config(text="", fg="gray")
 
 
 def main():

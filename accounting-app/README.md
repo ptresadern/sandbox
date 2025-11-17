@@ -5,7 +5,8 @@ A standalone desktop accounting application built with Python and tkinter for tr
 ## Features
 
 - **Transaction Management**: Add, view, and delete income and expense transactions
-- **Receipt Scanning** (NEW): Upload receipt images to automatically extract transaction details
+- **Receipt Scanning**: Upload receipt images to automatically extract transaction details
+- **Bank Statement Import** (NEW): Upload PDF bank statements to bulk import all transactions
 - **SQLite Database**: All data is stored locally in a SQLite database
 - **Category-based Tracking**: Organize transactions by predefined or custom categories
 - **Dashboard**: View summary statistics including total income, expenses, and net balance
@@ -20,10 +21,11 @@ A standalone desktop accounting application built with Python and tkinter for tr
   - tkinter (usually included with Python)
   - sqlite3 (included with Python)
   - datetime (included with Python)
-- External packages (for receipt scanning feature):
-  - Pillow: `pip install Pillow`
-  - pytesseract: `pip install pytesseract`
-  - Tesseract OCR engine (system dependency - see installation below)
+- External packages:
+  - Pillow: `pip install Pillow` (for receipt scanning)
+  - pytesseract: `pip install pytesseract` (for receipt scanning)
+  - PyPDF2: `pip install PyPDF2` (for bank statement import)
+  - Tesseract OCR engine (system dependency for receipt scanning - see installation below)
 
 ## Installation
 
@@ -104,6 +106,32 @@ python accounting_app.py
 - Clear, well-lit images work best
 - Avoid blurry or skewed images
 
+#### Importing Bank Statements (Bulk Import)
+
+1. Navigate to the "Import Statement" tab
+2. Click "Select PDF Bank Statement" button
+3. Choose a PDF bank statement file
+4. The app will automatically parse and extract:
+   - Account number
+   - Statement period
+   - All transactions (date, description/payee, amount)
+   - Suggested categories for each transaction
+5. Review transactions in the preview table
+6. Click "Import All Transactions" to add them to your database
+7. Confirm the import
+
+**Features:**
+- Bulk import multiple transactions at once
+- Automatic category suggestion based on payee/description
+- Preview before importing
+- Extracts transaction dates, amounts, and payee information
+- Supports text-based PDF bank statements
+
+**Tips:**
+- Works best with text-based PDF statements (not scanned images)
+- Some bank statement formats may require manual entry if parsing fails
+- You can edit individual transactions after import if needed
+
 **Income Categories:**
 - Salary
 - Freelance
@@ -149,7 +177,9 @@ accounting_app/
 ├── database.py          # Database operations and queries
 ├── reports.py           # Report generation functionality
 ├── receipt_parser.py    # OCR-based receipt scanning
+├── statement_parser.py  # PDF bank statement parsing
 ├── test_app.py          # Test suite
+├── requirements.txt     # Python dependencies
 ├── accounting.db        # SQLite database (created on first run)
 └── README.md           # This file
 ```
@@ -198,13 +228,29 @@ The `ReceiptParser` class provides:
 - Smart category suggestion based on merchant/keywords
 - Graceful error handling when OCR is unavailable
 
+### Bank Statement Parser Module (statement_parser.py)
+
+The `BankStatementParser` class provides:
+- PDF text extraction using PyPDF2
+- Intelligent parsing of bank statements:
+  - Account number extraction
+  - Statement period detection
+  - Transaction table parsing
+  - Date, description/payee, and amount extraction
+- Regex-based pattern matching for various statement formats
+- Automatic transaction type detection (income vs expense)
+- Category suggestion based on payee/description keywords
+- Support for multiple date and amount formats
+
 ### GUI Application (accounting_app.py)
 
 The `AccountingApp` class provides:
-- Tabbed interface with four main sections
+- Tabbed interface with five main sections (Dashboard, Add Transaction, Import Statement, Transactions, Reports)
 - Real-time data validation
 - Automatic summary updates
 - Transaction management with confirmation dialogs
+- Bulk import with preview functionality
+- Receipt scanning and bank statement import features
 
 ## Tips
 
