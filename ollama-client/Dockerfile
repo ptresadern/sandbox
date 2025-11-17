@@ -12,14 +12,16 @@ RUN apt-get update && apt-get install -y \
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:$PATH"
 
-# Copy project files
-COPY pyproject.toml ./
+# Copy requirements file
+COPY requirements.txt ./
+
+# Install dependencies with uv
+RUN uv pip install --system -r requirements.txt
+
+# Copy application files
 COPY app ./app
 COPY static ./static
 COPY templates ./templates
-
-# Install dependencies with uv
-RUN uv pip install --system -r pyproject.toml
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/knowledge-base
