@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import List, Optional
+from pathlib import Path
 
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
@@ -43,18 +44,31 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
-    logger.info("Starting application...")
-    init_default_users()
-    await indexer_service.start()
-    logger.info("Application started")
+    try:
+        logger.info("Starting application...")
+        logger.info("Initializing default users...")
+        init_default_users()
+        logger.info("Starting indexer service...")
+        await indexer_service.start()
+        logger.info("Application started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start application: {e}", exc_info=True)
+        # Don't crash the app - let it start without indexer if needed
+        logger.warning("Application starting in degraded mode")
 
     yield
 
     # Shutdown
     logger.info("Shutting down application...")
-    indexer_service.stop()
+    try:
+        indexer_service.stop()
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
     logger.info("Application shutdown complete")
 
+
+# Get base directory (parent of app directory)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Create FastAPI app
 app = FastAPI(
@@ -65,8 +79,19 @@ app = FastAPI(
 )
 
 # Mount static files and templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+static_dir = BASE_DIR / "static"
+templates_dir = BASE_DIR / "templates"
+
+logger.info(f"Static directory: {static_dir}")
+logger.info(f"Templates directory: {templates_dir}")
+
+if not static_dir.exists():
+    logger.error(f"Static directory does not exist: {static_dir}")
+if not templates_dir.exists():
+    logger.error(f"Templates directory does not exist: {templates_dir}")
+
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+templates = Jinja2Templates(directory=str(templates_dir))
 
 
 # Pydantic models
