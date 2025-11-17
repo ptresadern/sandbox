@@ -125,8 +125,13 @@ def verify_admin_password(password: str) -> bool:
 def init_default_users():
     """Initialize default users if none exist"""
     # Check if admin exists
+    logger.info("Checking if admin user exists...")
     admin = db.get_user_by_username("admin")
     if not admin:
+        logger.info("Creating default admin user...")
+        logger.info(f"Admin password length: {len(settings.admin_password)} characters")
         hashed_password = get_password_hash(settings.admin_password)
         db.create_user("admin", hashed_password, is_admin=True)
-        print("Created default admin user")
+        logger.info("Created default admin user successfully")
+    else:
+        logger.info("Admin user already exists")

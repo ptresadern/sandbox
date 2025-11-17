@@ -7,6 +7,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -76,6 +77,15 @@ app = FastAPI(
     description="RAG-powered web application with Ollama integration",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount static files and templates
@@ -163,14 +173,17 @@ async def register(user: UserCreate):
 @app.post("/api/auth/login", response_model=Token)
 async def login(login_req: LoginRequest):
     """Login and get access token"""
+    logger.info(f"Login attempt for user: {login_req.username}")
     user = authenticate_user(login_req.username, login_req.password)
     if not user:
+        logger.warning(f"Failed login attempt for user: {login_req.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    logger.info(f"Successful login for user: {login_req.username}")
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
