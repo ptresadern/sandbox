@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Media Gallery{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('gallery') }}" class="nav-brand">Media Gallery</a>
+            {% if current_user.is_authenticated %}
+            <div class="nav-links">
+                <a href="{{ url_for('upload') }}">Upload</a>
+                <a href="{{ url_for('gallery') }}">Gallery</a>
+                <a href="{{ url_for('admin') }}">Admin</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Media Gallery</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

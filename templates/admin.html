@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Media Gallery{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>Admin Panel</h1>
+
+    {% if files %}
+        <div class="admin-header">
+            <div class="admin-stats">
+                <p>Total files: <strong>{{ files|length }}</strong></p>
+                <p>Storage: <strong>{{ storage_type|upper }}</strong></p>
+            </div>
+
+            <div class="admin-actions">
+                <button onclick="selectAll()" class="btn btn-secondary">Select All</button>
+                <button onclick="deselectAll()" class="btn btn-secondary">Deselect All</button>
+                <a href="{{ url_for('download_all') }}" class="btn btn-primary">Download All</a>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('download_selected') }}" id="download-form">
+            <div class="admin-toolbar">
+                <button type="submit" class="btn btn-primary">
+                    Download Selected (<span id="selected-count">0</span>)
+                </button>
+            </div>
+
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" id="select-all-checkbox" onchange="toggleAll(this)">
+                            </th>
+                            <th>Preview</th>
+                            <th>Filename</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Modified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in files %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="selected_files" value="{{ file.name }}" class="file-checkbox" onchange="updateCount()">
+                                </td>
+                                <td>
+                                    <div class="admin-preview">
+                                        {% if file.type == 'image' %}
+                                            <img src="{{ file.url }}" alt="{{ file.name }}">
+                                        {% elif file.type == 'video' %}
+                                            <div class="video-preview">
+                                                <span>🎬</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="filename-cell" title="{{ file.name }}">{{ file.name }}</td>
+                                <td>
+                                    <span class="badge badge-{{ file.type }}">{{ file.type }}</span>
+                                </td>
+                                <td>{{ (file.size / 1024 / 1024) | round(2) }} MB</td>
+                                <td>{{ file.modified.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('download_file', filename=file.name) }}" class="btn btn-small">Download</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    {% else %}
+        <div class="empty-state">
+            <h2>No media files yet</h2>
+            <p>Upload some photos or videos to get started!</p>
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">Upload Files</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    function updateCount() {
+        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+        document.getElementById('selected-count').textContent = checkboxes.length;
+    }
+
+    function toggleAll(checkbox) {
+        const checkboxes = document.querySelectorAll('.file-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+        updateCount();
+    }
+
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.file-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+        });
+        document.getElementById('select-all-checkbox').checked = true;
+        updateCount();
+    }
+
+    function deselectAll() {
+        const checkboxes = document.querySelectorAll('.file-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+        document.getElementById('select-all-checkbox').checked = false;
+        updateCount();
+    }
+
+    // Prevent form submission if no files selected
+    document.getElementById('download-form').addEventListener('submit', function(e) {
+        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+        if (checkboxes.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one file to download');
+        }
+    });
+</script>
+{% endblock %}

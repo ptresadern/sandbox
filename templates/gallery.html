@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery - Media Gallery{% endblock %}
+
+{% block content %}
+<div class="gallery-container">
+    <h1>Media Gallery</h1>
+
+    {% if files %}
+        <div class="gallery-stats">
+            <p>Total items: {{ files|length }}</p>
+        </div>
+
+        <div class="gallery-grid">
+            {% for file in files %}
+                <div class="gallery-item" data-type="{{ file.type }}">
+                    {% if file.type == 'image' %}
+                        <img src="{{ file.url }}" alt="{{ file.name }}" loading="lazy" onclick="openModal('{{ file.url }}', '{{ file.name }}', 'image')">
+                    {% elif file.type == 'video' %}
+                        <div class="video-thumbnail" onclick="openModal('{{ file.url }}', '{{ file.name }}', 'video')">
+                            <div class="play-icon">▶</div>
+                            <video src="{{ file.url }}" preload="metadata"></video>
+                        </div>
+                    {% endif %}
+                    <div class="gallery-item-info">
+                        <p class="file-name" title="{{ file.name }}">{{ file.name }}</p>
+                        <p class="file-meta">{{ (file.size / 1024 / 1024) | round(2) }} MB</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h2>No media files yet</h2>
+            <p>Upload some photos or videos to get started!</p>
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">Upload Files</a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal for viewing media -->
+<div id="mediaModal" class="modal">
+    <span class="modal-close" onclick="closeModal()">&times;</span>
+    <div class="modal-content">
+        <img id="modalImage" src="" alt="" style="display:none;">
+        <video id="modalVideo" controls style="display:none;">
+            <source src="" type="video/mp4">
+        </video>
+        <div class="modal-caption" id="modalCaption"></div>
+    </div>
+</div>
+
+<script>
+    function openModal(url, name, type) {
+        const modal = document.getElementById('mediaModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalVideo = document.getElementById('modalVideo');
+        const modalCaption = document.getElementById('modalCaption');
+
+        modalImage.style.display = 'none';
+        modalVideo.style.display = 'none';
+
+        if (type === 'image') {
+            modalImage.src = url;
+            modalImage.style.display = 'block';
+        } else if (type === 'video') {
+            modalVideo.querySelector('source').src = url;
+            modalVideo.load();
+            modalVideo.style.display = 'block';
+        }
+
+        modalCaption.textContent = name;
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('mediaModal');
+        const modalVideo = document.getElementById('modalVideo');
+        modalVideo.pause();
+        modal.style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('mediaModal');
+        if (event.target === modal) {
+            closeModal();
+        }
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}
