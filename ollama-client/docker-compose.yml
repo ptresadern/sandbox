@@ -11,6 +11,12 @@ services:
     networks:
       - ollama-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     # Uncomment if you have GPU support
     # deploy:
     #   resources:
@@ -32,7 +38,8 @@ services:
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     networks:
       - ollama-network
     restart: unless-stopped

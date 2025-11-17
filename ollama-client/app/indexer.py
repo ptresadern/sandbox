@@ -242,8 +242,12 @@ class IndexerService:
         """Start the indexer service"""
         logger.info("Starting indexer service...")
 
-        # Initial indexing
-        await self.indexer.index_all_documents()
+        # Initial indexing (non-blocking, will retry on errors)
+        try:
+            await self.indexer.index_all_documents()
+        except Exception as e:
+            logger.warning(f"Initial indexing failed (will retry later): {e}")
+            logger.info("You may need to pull models: docker exec -it ollama ollama pull llama3.2:3b")
 
         # Start watching for changes
         self.observer = Observer()
