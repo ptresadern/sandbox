@@ -298,6 +298,45 @@ input[type="file"] {
     border-radius: 8px;
     margin-bottom: 2rem;
     box-shadow: var(--shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.stats-left p {
+    margin: 0;
+}
+
+.stats-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stats-right label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.stats-right select {
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.stats-right select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.stats-right select:hover {
+    border-color: var(--primary-color);
 }
 
 .gallery-grid {

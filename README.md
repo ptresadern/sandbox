@@ -4,13 +4,15 @@ A secure, password-protected web application for uploading, viewing, and managin
 
 ## Features
 
-- **Password Authentication**: Secure login system to protect your media
+- **Two-Tier Authentication**: Separate admin and regular user access levels
+  - Admin users: Full access including bulk downloads
+  - Regular users: Upload and view only (no bulk download)
 - **Multi-file Upload**: Upload multiple photos and videos simultaneously
 - **Dual Storage Options**: Store files locally or on AWS S3
-- **Gallery View**: Beautiful grid layout to browse your media
+- **Gallery View**: Beautiful grid layout with customizable columns (2-6)
 - **Media Viewer**: Click to view full-size images and play videos
-- **Admin Panel**: Manage all uploaded media with easy download options
-- **Bulk Download**: Download selected files or all files as a ZIP archive
+- **Admin Panel**: Manage all uploaded media with easy download options (admin only)
+- **Bulk Download**: Download selected files or all files as a ZIP archive (admin only)
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 
 ## Supported File Formats
@@ -48,8 +50,12 @@ A secure, password-protected web application for uploading, viewing, and managin
    ### Basic Configuration
    ```env
    SECRET_KEY=your-secret-key-here-change-this
+   # Admin credentials (full access including downloads)
    ADMIN_USERNAME=admin
-   ADMIN_PASSWORD=your-secure-password
+   ADMIN_PASSWORD=your-secure-admin-password
+   # Regular user credentials (can upload and view, but cannot bulk download)
+   USER_USERNAME=user
+   USER_PASSWORD=your-secure-user-password
    ```
 
    ### Storage Configuration
@@ -85,9 +91,19 @@ A secure, password-protected web application for uploading, viewing, and managin
 
 3. **Login**
 
-   Use the credentials you set in the `.env` file:
-   - Username: `admin` (or your custom username)
-   - Password: `admin123` (or your custom password)
+   The application supports two levels of access:
+
+   **Admin User** (full access):
+   - Username: `admin` (default)
+   - Password: `admin123` (default)
+   - Can upload, view, and download all media
+   - Has access to the admin panel
+
+   **Regular User** (restricted access):
+   - Username: `user` (default)
+   - Password: `user123` (default)
+   - Can upload and view media
+   - Cannot access the admin panel or bulk download features
 
 ## Usage Guide
 
@@ -102,8 +118,10 @@ A secure, password-protected web application for uploading, viewing, and managin
 ### Viewing Media
 
 1. Click **Gallery** to see all uploaded media
-2. Click on any image or video to view it full-size
-3. Use the close button (×) or press ESC to close the viewer
+2. Use the **Columns** dropdown to select how many columns to display (2-6 columns)
+   - Your preference is saved automatically for future visits
+3. Click on any image or video to view it full-size
+4. Use the close button (×) or press ESC to close the viewer
 
 ### Admin Features
 

@@ -12,6 +12,8 @@ class Config:
     # Authentication
     ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
+    USER_USERNAME = os.getenv('USER_USERNAME', 'user')
+    USER_PASSWORD = os.getenv('USER_PASSWORD', 'user123')
 
     # Storage
     STORAGE_TYPE = os.getenv('STORAGE_TYPE', 'local')  # 'local' or 's3'

@@ -25,14 +25,38 @@ if app.config['STORAGE_TYPE'] == 'local':
 
 
 class User(UserMixin):
-    """Simple user class for authentication"""
-    def __init__(self, id):
+    """User class for authentication with role support"""
+    def __init__(self, id, role='user'):
         self.id = id
+        self.role = role
+
+    def is_admin(self):
+        """Check if user has admin role"""
+        return self.role == 'admin'
+
+
+# Store user sessions with their roles
+user_sessions = {}
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    """Load user from session"""
+    if user_id in user_sessions:
+        return user_sessions[user_id]
+    return None
+
+
+def admin_required(f):
+    """Decorator to require admin role"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin():
+            flash('Admin access required', 'error')
+            return redirect(url_for('gallery'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def allowed_file(filename):
@@ -167,8 +191,17 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
+        # Check admin credentials
         if username == app.config['ADMIN_USERNAME'] and password == app.config['ADMIN_PASSWORD']:
-            user = User(username)
+            user = User(username, role='admin')
+            user_sessions[username] = user
+            login_user(user)
+            flash('Successfully logged in as admin!', 'success')
+            return redirect(url_for('gallery'))
+        # Check regular user credentials
+        elif username == app.config['USER_USERNAME'] and password == app.config['USER_PASSWORD']:
+            user = User(username, role='user')
+            user_sessions[username] = user
             login_user(user)
             flash('Successfully logged in!', 'success')
             return redirect(url_for('gallery'))
@@ -182,6 +215,9 @@ def login():
 @login_required
 def logout():
     """Logout user"""
+    # Clear user session
+    if current_user.id in user_sessions:
+        del user_sessions[current_user.id]
     logout_user()
     flash('Successfully logged out', 'success')
     return redirect(url_for('login'))
@@ -242,8 +278,9 @@ def gallery():
 
 @app.route('/admin')
 @login_required
+@admin_required
 def admin():
-    """Admin page for managing and downloading media"""
+    """Admin page for managing and downloading media (admin only)"""
     files = get_media_files()
 
     # Add file type to each file
@@ -290,8 +327,9 @@ def download_file(filename):
 
 @app.route('/download-all')
 @login_required
+@admin_required
 def download_all():
-    """Download all files as a zip archive"""
+    """Download all files as a zip archive (admin only)"""
     files = get_media_files()
 
     if not files:
@@ -331,8 +369,9 @@ def download_all():
 
 @app.route('/download-selected', methods=['POST'])
 @login_required
+@admin_required
 def download_selected():
-    """Download selected files as a zip archive"""
+    """Download selected files as a zip archive (admin only)"""
     selected_files = request.form.getlist('selected_files')
 
     if not selected_files:

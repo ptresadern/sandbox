@@ -8,10 +8,22 @@
 
     {% if files %}
         <div class="gallery-stats">
-            <p>Total items: {{ files|length }}</p>
+            <div class="stats-left">
+                <p>Total items: {{ files|length }}</p>
+            </div>
+            <div class="stats-right">
+                <label for="columnSelector">Columns: </label>
+                <select id="columnSelector" onchange="updateColumns()">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                </select>
+            </div>
         </div>
 
-        <div class="gallery-grid">
+        <div class="gallery-grid" id="galleryGrid">
             {% for file in files %}
                 <div class="gallery-item" data-type="{{ file.type }}">
                     {% if file.type == 'image' %}
@@ -51,6 +63,31 @@
 </div>
 
 <script>
+    // Column selector functionality
+    function updateColumns() {
+        const columnCount = document.getElementById('columnSelector').value;
+        const galleryGrid = document.getElementById('galleryGrid');
+
+        // Calculate min width based on column count
+        const minWidth = Math.floor(1200 / columnCount) - 30;
+        galleryGrid.style.gridTemplateColumns = `repeat(${columnCount}, 1fr)`;
+
+        // Save preference to localStorage
+        localStorage.setItem('galleryColumns', columnCount);
+    }
+
+    // Load saved column preference on page load
+    window.addEventListener('DOMContentLoaded', function() {
+        const savedColumns = localStorage.getItem('galleryColumns');
+        if (savedColumns) {
+            document.getElementById('columnSelector').value = savedColumns;
+            updateColumns();
+        } else {
+            // Set default to 4 columns
+            updateColumns();
+        }
+    });
+
     function openModal(url, name, type) {
         const modal = document.getElementById('mediaModal');
         const modalImage = document.getElementById('modalImage');
