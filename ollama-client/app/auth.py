@@ -1,5 +1,6 @@
 """Authentication and authorization"""
 
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -12,6 +13,7 @@ from pydantic import BaseModel
 from app.config import settings
 from app.database import db
 
+logger = logging.getLogger(__name__)
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -42,11 +44,19 @@ class UserCreate(BaseModel):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
+    # bcrypt has a 72-byte limit, truncate if needed
+    if len(plain_password.encode('utf-8')) > 72:
+        plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
+    # bcrypt has a 72-byte limit, truncate if needed
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        logger.warning(f"Password exceeds 72 bytes ({len(password_bytes)} bytes), truncating to 72 bytes")
+        password = password[:72]
     return pwd_context.hash(password)
 
 
