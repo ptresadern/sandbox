@@ -1,4 +1,4 @@
-# Media Gallery Web Application
+# Phil & Rachel's Wedding Album
 
 A secure, password-protected web application for uploading, viewing, and managing photos and videos. Built with Flask and Python, supporting both local storage and AWS S3.
 

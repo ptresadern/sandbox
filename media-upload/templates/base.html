@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Media Gallery{% endblock %}</title>
+    <title>{% block title %}Phil & Rachel's Wedding Album{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <a href="{{ url_for('gallery') }}" class="nav-brand">Media Gallery</a>
+            <a href="{{ url_for('gallery') }}" class="nav-brand">Phil & Rachel's Wedding Album</a>
             {% if current_user.is_authenticated %}
             <div class="nav-links">
                 <a href="{{ url_for('upload') }}">Upload</a>
@@ -38,7 +38,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2024 Media Gallery</p>
+        <p>&copy; 2024 Phil & Rachel's Wedding Album</p>
     </footer>
 
     {% block scripts %}{% endblock %}
