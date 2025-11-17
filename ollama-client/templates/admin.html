@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Ollama RAG</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="admin-app">
+        <!-- Login Screen -->
+        <div id="admin-login-screen" class="screen">
+            <div class="login-container">
+                <h1>Admin Panel</h1>
+                <div class="login-form">
+                    <input type="text" id="admin-username" placeholder="Username" autocomplete="username">
+                    <input type="password" id="admin-password" placeholder="Password" autocomplete="current-password">
+                    <button onclick="adminLogin()">Login</button>
+                    <div id="admin-login-error" class="error-message"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="admin-dashboard" class="screen" style="display: none;">
+            <div class="admin-container">
+                <div class="admin-header">
+                    <h1>Admin Dashboard</h1>
+                    <button onclick="adminLogout()" class="logout-btn">Logout</button>
+                </div>
+
+                <div class="admin-content">
+                    <!-- System Status -->
+                    <div class="admin-section">
+                        <h2>System Status</h2>
+                        <div id="system-status" class="status-grid">
+                            <div class="status-card">
+                                <h3>Ollama Status</h3>
+                                <div id="ollama-status">Loading...</div>
+                            </div>
+                            <div class="status-card">
+                                <h3>Indexer Status</h3>
+                                <div id="indexer-status">Loading...</div>
+                            </div>
+                            <div class="status-card">
+                                <h3>Documents</h3>
+                                <div id="document-stats">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Index Management -->
+                    <div class="admin-section">
+                        <h2>Index Management</h2>
+                        <div class="button-group">
+                            <button onclick="triggerReindex()" class="admin-btn">Reindex All Documents</button>
+                            <button onclick="clearIndex()" class="admin-btn danger">Clear Index</button>
+                        </div>
+                        <div id="index-status" class="status-message"></div>
+                    </div>
+
+                    <!-- Model Management -->
+                    <div class="admin-section">
+                        <h2>Model Management</h2>
+                        <div id="model-info" class="model-info">
+                            <p><strong>LLM Model:</strong> <span id="llm-model">Loading...</span></p>
+                            <p><strong>Embedding Model:</strong> <span id="embedding-model">Loading...</span></p>
+                        </div>
+                        <div class="model-pull">
+                            <h3>Pull New Model</h3>
+                            <input type="text" id="model-name-input" placeholder="Model name (e.g., llama2)">
+                            <button onclick="pullModel()" class="admin-btn">Pull Model</button>
+                            <div id="pull-progress" class="progress-area"></div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Statistics -->
+                    <div class="admin-section">
+                        <h2>Detailed Statistics</h2>
+                        <div id="detailed-stats" class="stats-container">
+                            <pre id="stats-json">Loading...</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

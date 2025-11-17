@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama RAG Chat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen">
+            <div class="login-container">
+                <h1>Ollama RAG Chat</h1>
+                <div class="login-form">
+                    <div id="login-tab-buttons">
+                        <button class="tab-button active" onclick="showLoginTab('login')">Login</button>
+                        <button class="tab-button" onclick="showLoginTab('register')">Register</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div id="login-form" class="tab-content active">
+                        <input type="text" id="login-username" placeholder="Username" autocomplete="username">
+                        <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+                        <button onclick="login()">Login</button>
+                        <div id="login-error" class="error-message"></div>
+                    </div>
+
+                    <!-- Register Form -->
+                    <div id="register-form" class="tab-content">
+                        <input type="text" id="register-username" placeholder="Username" autocomplete="username">
+                        <input type="password" id="register-password" placeholder="Password" autocomplete="new-password">
+                        <button onclick="register()">Register</button>
+                        <div id="register-error" class="error-message"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Screen -->
+        <div id="chat-screen" class="screen" style="display: none;">
+            <div class="chat-container">
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>Conversations</h2>
+                        <button onclick="createNewConversation()" title="New Conversation">+</button>
+                    </div>
+                    <div id="conversation-list" class="conversation-list"></div>
+                    <div class="sidebar-footer">
+                        <div class="user-info">
+                            <span id="username-display"></span>
+                            <button onclick="logout()" class="logout-btn">Logout</button>
+                        </div>
+                        <div class="admin-link" id="admin-link" style="display: none;">
+                            <a href="/admin" target="_blank">Admin Panel</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Area -->
+                <div class="chat-area">
+                    <div class="chat-header">
+                        <h2 id="chat-title">Select or create a conversation</h2>
+                        <div class="chat-controls">
+                            <label class="switch">
+                                <input type="checkbox" id="rag-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>RAG Mode</span>
+                            <button onclick="exportConversation()" id="export-btn" disabled>Export</button>
+                            <button onclick="searchMode()" id="search-btn">Search</button>
+                        </div>
+                    </div>
+
+                    <div id="messages" class="messages"></div>
+
+                    <div class="input-area">
+                        <textarea id="message-input" placeholder="Type your message..." rows="3"></textarea>
+                        <button onclick="sendMessage()" id="send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Modal -->
+        <div id="search-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Search Documents</h2>
+                    <button onclick="closeSearchModal()" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-input-area">
+                        <input type="text" id="search-input" placeholder="Enter search query...">
+                        <button onclick="performSearch()">Search</button>
+                    </div>
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
