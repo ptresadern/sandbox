@@ -9,9 +9,17 @@ class Config:
     # Flask
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-please-change')
 
-    # Authentication
-    ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
-    ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
+    # Authentication - Multiple users with roles
+    USERS = {
+        'admin': {
+            'password': os.getenv('ADMIN_PASSWORD', 'admin123'),
+            'role': 'admin'
+        },
+        'user': {
+            'password': os.getenv('USER_PASSWORD', 'user123'),
+            'role': 'user'
+        }
+    }
 
     # Storage
     STORAGE_TYPE = os.getenv('STORAGE_TYPE', 'local')  # 'local' or 's3'

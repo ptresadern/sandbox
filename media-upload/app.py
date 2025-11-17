@@ -26,13 +26,22 @@ if app.config['STORAGE_TYPE'] == 'local':
 
 class User(UserMixin):
     """Simple user class for authentication"""
-    def __init__(self, id):
+    def __init__(self, id, role='user'):
         self.id = id
+        self.role = role
+
+    def is_admin(self):
+        """Check if user has admin role"""
+        return self.role == 'admin'
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    """Load user from session"""
+    users = app.config['USERS']
+    if user_id in users:
+        return User(user_id, users[user_id]['role'])
+    return None
 
 
 def allowed_file(filename):
@@ -167,10 +176,11 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        if username == app.config['ADMIN_USERNAME'] and password == app.config['ADMIN_PASSWORD']:
-            user = User(username)
+        users = app.config['USERS']
+        if username in users and password == users[username]['password']:
+            user = User(username, users[username]['role'])
             login_user(user)
-            flash('Successfully logged in!', 'success')
+            flash(f'Successfully logged in as {users[username]["role"]}!', 'success')
             return redirect(url_for('gallery'))
         else:
             flash('Invalid credentials', 'error')
@@ -244,6 +254,10 @@ def gallery():
 @login_required
 def admin():
     """Admin page for managing and downloading media"""
+    if not current_user.is_admin():
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('gallery'))
+
     files = get_media_files()
 
     # Add file type to each file
@@ -256,7 +270,11 @@ def admin():
 @app.route('/download/<filename>')
 @login_required
 def download_file(filename):
-    """Download a single file"""
+    """Download a single file - Admin only"""
+    if not current_user.is_admin():
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('gallery'))
+
     if not allowed_file(filename):
         flash('Invalid file', 'error')
         return redirect(url_for('admin'))
@@ -291,7 +309,11 @@ def download_file(filename):
 @app.route('/download-all')
 @login_required
 def download_all():
-    """Download all files as a zip archive"""
+    """Download all files as a zip archive - Admin only"""
+    if not current_user.is_admin():
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('gallery'))
+
     files = get_media_files()
 
     if not files:
@@ -332,7 +354,11 @@ def download_all():
 @app.route('/download-selected', methods=['POST'])
 @login_required
 def download_selected():
-    """Download selected files as a zip archive"""
+    """Download selected files as a zip archive - Admin only"""
+    if not current_user.is_admin():
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('gallery'))
+
     selected_files = request.form.getlist('selected_files')
 
     if not selected_files:

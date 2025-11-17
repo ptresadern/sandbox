@@ -14,7 +14,9 @@
             <div class="nav-links">
                 <a href="{{ url_for('upload') }}">Upload</a>
                 <a href="{{ url_for('gallery') }}">Gallery</a>
+                {% if current_user.is_admin() %}
                 <a href="{{ url_for('admin') }}">Admin</a>
+                {% endif %}
                 <a href="{{ url_for('logout') }}">Logout</a>
             </div>
             {% endif %}

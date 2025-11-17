@@ -8,7 +8,19 @@
 
     {% if files %}
         <div class="gallery-stats">
-            <p>Total items: {{ files|length }}</p>
+            <div>
+                <p>Total items: {{ files|length }}</p>
+            </div>
+            <div class="gallery-controls">
+                <label for="column-selector">Columns:</label>
+                <select id="column-selector" class="column-selector">
+                    <option value="2">2 Columns</option>
+                    <option value="3">3 Columns</option>
+                    <option value="4" selected>4 Columns</option>
+                    <option value="5">5 Columns</option>
+                    <option value="6">6 Columns</option>
+                </select>
+            </div>
         </div>
 
         <div class="gallery-grid">
@@ -51,6 +63,27 @@
 </div>
 
 <script>
+    // Column selector functionality
+    const columnSelector = document.getElementById('column-selector');
+    const galleryGrid = document.querySelector('.gallery-grid');
+
+    // Load saved preference or use default
+    const savedColumns = localStorage.getItem('galleryColumns') || '4';
+    columnSelector.value = savedColumns;
+    updateGalleryColumns(savedColumns);
+
+    // Listen for column changes
+    columnSelector.addEventListener('change', function() {
+        const columns = this.value;
+        updateGalleryColumns(columns);
+        localStorage.setItem('galleryColumns', columns);
+    });
+
+    function updateGalleryColumns(columns) {
+        galleryGrid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    }
+
+    // Modal functions
     function openModal(url, name, type) {
         const modal = document.getElementById('mediaModal');
         const modalImage = document.getElementById('modalImage');
