@@ -8,15 +8,11 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
-
 # Copy requirements file
 COPY requirements.txt ./
 
-# Install dependencies with uv
-RUN uv pip install --system -r requirements.txt
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY app ./app
