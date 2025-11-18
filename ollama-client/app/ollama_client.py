@@ -14,7 +14,8 @@ class OllamaClient:
         self.base_url = base_url or settings.ollama_base_url
         self.model = model or settings.ollama_model
         self.embedding_model = embedding_model or settings.ollama_embedding_model
-        self.timeout = httpx.Timeout(120.0, connect=10.0)
+        # Increased timeout for RAG requests with large context
+        self.timeout = httpx.Timeout(300.0, connect=10.0, read=300.0)
 
     async def generate(
         self,
