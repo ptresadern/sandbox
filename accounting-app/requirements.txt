@@ -1,3 +1,28 @@
+# Python Accounting App - Dependencies
+
+# Image processing for receipt scanning
 Pillow>=12.0.0
+
+# OCR wrapper for receipt text extraction (requires Tesseract OCR to be installed)
 pytesseract>=0.3.13
+
+# PDF parsing for bank statement import
 PyPDF2>=3.0.0
+
+# Note: This is a desktop GUI application using tkinter, NOT a web application.
+#
+# System dependencies (install separately):
+# - tkinter: Usually included with Python. On Linux, install with:
+#   Ubuntu/Debian: sudo apt-get install python3-tk
+#   Fedora: sudo dnf install python3-tkinter
+#
+# - Tesseract OCR (optional, for receipt scanning feature):
+#   Ubuntu/Debian: sudo apt-get install tesseract-ocr
+#   macOS: brew install tesseract
+#   Windows: https://github.com/UB-Mannheim/tesseract/wiki
+#
+# To run the application:
+#   python accounting_app.py
+#
+# This is NOT a web server application and does not run on localhost:8000.
+
