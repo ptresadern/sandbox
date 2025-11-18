@@ -305,7 +305,16 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
                 if first_chunk and chunk_sources:
                     sources = chunk_sources
                     # Send sources first
-                    yield f"data: {json.dumps({'type': 'sources', 'sources': [{'file_name': s['metadata'].get('file_name'), 'text': s['text'][:200] + '...' if len(s['text']) > 200 else s['text']} for s in sources]})}\n\n"
+                    try:
+                        formatted_sources = []
+                        for s in sources:
+                            file_name = s.get('metadata', {}).get('file_name', 'Unknown')
+                            text = s.get('text', '')
+                            text_preview = text[:200] + '...' if len(text) > 200 else text
+                            formatted_sources.append({'file_name': file_name, 'text': text_preview})
+                        yield f"data: {json.dumps({'type': 'sources', 'sources': formatted_sources})}\n\n"
+                    except Exception as source_error:
+                        logger.warning(f"Error formatting sources: {source_error}")
                     first_chunk = False
 
                 # Send content chunk
@@ -319,7 +328,7 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
             yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id})}\n\n"
 
         except Exception as e:
-            logger.error(f"Error in chat: {e}")
+            logger.error(f"Error in chat: {e}", exc_info=True)
             yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

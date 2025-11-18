@@ -73,13 +73,13 @@ Please provide a comprehensive answer based on the context above. If the context
                 # Create RAG prompt
                 rag_prompt = self._create_rag_prompt(query, context)
 
-                # Build messages for chat
-                messages = conversation_history or []
+                # Build messages for chat (copy conversation history to avoid mutation)
+                messages = list(conversation_history) if conversation_history else []
                 messages.append({"role": "user", "content": rag_prompt})
 
             else:
                 # No relevant documents found
-                messages = conversation_history or []
+                messages = list(conversation_history) if conversation_history else []
                 messages.append(
                     {
                         "role": "user",
@@ -88,7 +88,7 @@ Please provide a comprehensive answer based on the context above. If the context
                 )
         else:
             # No RAG, just direct chat
-            messages = conversation_history or []
+            messages = list(conversation_history) if conversation_history else []
             messages.append({"role": "user", "content": query})
 
         # Generate response with streaming
