@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 import boto3
 from botocore.exceptions import ClientError
 from config import Config
+from PIL import Image
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -22,6 +23,7 @@ login_manager.login_view = 'login'
 # Create upload folder if it doesn't exist
 if app.config['STORAGE_TYPE'] == 'local':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails'), exist_ok=True)
 
 
 class User(UserMixin):
@@ -88,6 +90,79 @@ def upload_to_local(file, filename):
         return False
 
 
+def create_thumbnail(file, filename, is_s3=False):
+    """Create a thumbnail for an image file"""
+    try:
+        # Check if file is an image
+        file_ext = filename.rsplit('.', 1)[1].lower()
+        if file_ext not in {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}:
+            return False
+
+        # Open the image
+        if is_s3:
+            # For S3, file is already a file object
+            img = Image.open(file)
+            file.seek(0)  # Reset file pointer for original upload
+        else:
+            # For local storage, open from saved file
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            img = Image.open(filepath)
+
+        # Convert RGBA to RGB if necessary (for JPEG compatibility)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+            img = background
+
+        # Calculate thumbnail size (640px on longest dimension)
+        max_size = 640
+        width, height = img.size
+
+        if width > height:
+            new_width = max_size
+            new_height = int(height * (max_size / width))
+        else:
+            new_height = max_size
+            new_width = int(width * (max_size / height))
+
+        # Only create thumbnail if image is larger than max_size
+        if width > max_size or height > max_size:
+            img.thumbnail((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Save thumbnail
+        if is_s3:
+            # Save to BytesIO for S3 upload
+            thumb_buffer = io.BytesIO()
+            # Use JPEG for thumbnails to save space
+            save_format = 'JPEG' if file_ext in {'jpg', 'jpeg'} else 'PNG'
+            img.save(thumb_buffer, format=save_format, quality=85, optimize=True)
+            thumb_buffer.seek(0)
+
+            # Upload to S3
+            s3_client = get_s3_client()
+            thumb_path = f"{app.config['UPLOAD_FOLDER']}/thumbnails/{filename}"
+            s3_client.upload_fileobj(
+                thumb_buffer,
+                app.config['S3_BUCKET_NAME'],
+                thumb_path,
+                ExtraArgs={'ContentType': f'image/{save_format.lower()}'}
+            )
+        else:
+            # Save to local thumbnails folder
+            thumb_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails')
+            thumb_path = os.path.join(thumb_dir, filename)
+            # Use JPEG for thumbnails to save space
+            save_format = 'JPEG' if file_ext in {'jpg', 'jpeg'} else 'PNG'
+            img.save(thumb_path, format=save_format, quality=85, optimize=True)
+
+        return True
+    except Exception as e:
+        print(f"Error creating thumbnail for {filename}: {e}")
+        return False
+
+
 def get_media_files():
     """Get list of all media files from storage"""
     files = []
@@ -104,12 +179,14 @@ def get_media_files():
             if 'Contents' in response:
                 for obj in response['Contents']:
                     filename = obj['Key'].replace(prefix, '')
-                    if filename and allowed_file(filename):
+                    # Skip thumbnails folder
+                    if filename and allowed_file(filename) and not filename.startswith('thumbnails/'):
                         files.append({
                             'name': filename,
                             'size': obj['Size'],
                             'modified': obj['LastModified'],
-                            'url': get_file_url(filename)
+                            'url': get_file_url(filename),
+                            'thumbnail_url': get_thumbnail_url(filename)
                         })
         except ClientError as e:
             print(f"Error listing S3 files: {e}")
@@ -124,7 +201,8 @@ def get_media_files():
                         'name': filepath.name,
                         'size': stat.st_size,
                         'modified': datetime.fromtimestamp(stat.st_mtime),
-                        'url': url_for('serve_file', filename=filepath.name)
+                        'url': url_for('serve_file', filename=filepath.name),
+                        'thumbnail_url': get_thumbnail_url(filepath.name)
                     })
 
     # Sort by modified date, newest first
@@ -149,6 +227,32 @@ def get_file_url(filename):
             return None
     else:
         return url_for('serve_file', filename=filename)
+
+
+def get_thumbnail_url(filename):
+    """Get URL for a thumbnail"""
+    if app.config['STORAGE_TYPE'] == 's3':
+        s3_client = get_s3_client()
+        thumb_path = f"{app.config['UPLOAD_FOLDER']}/thumbnails/{filename}"
+        try:
+            # Check if thumbnail exists
+            s3_client.head_object(Bucket=app.config['S3_BUCKET_NAME'], Key=thumb_path)
+            url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': app.config['S3_BUCKET_NAME'], 'Key': thumb_path},
+                ExpiresIn=3600  # URL expires in 1 hour
+            )
+            return url
+        except ClientError:
+            # Thumbnail doesn't exist, return original
+            return get_file_url(filename)
+    else:
+        thumb_path = os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails', filename)
+        if os.path.exists(thumb_path):
+            return url_for('serve_thumbnail', filename=filename)
+        else:
+            # Thumbnail doesn't exist, return original
+            return url_for('serve_file', filename=filename)
 
 
 def get_file_type(filename):
@@ -217,13 +321,23 @@ def upload():
                 filename = timestamp + filename
 
                 if app.config['STORAGE_TYPE'] == 's3':
-                    if upload_to_s3(file, filename):
+                    # For S3, we need to read the file into memory
+                    file_data = file.read()
+                    file_obj = io.BytesIO(file_data)
+                    file_obj.content_type = file.content_type
+
+                    if upload_to_s3(file_obj, filename):
                         uploaded_count += 1
+                        # Create thumbnail for images
+                        file_obj.seek(0)
+                        create_thumbnail(file_obj, filename, is_s3=True)
                     else:
                         flash(f'Failed to upload {file.filename} to S3', 'error')
                 else:
                     if upload_to_local(file, filename):
                         uploaded_count += 1
+                        # Create thumbnail for images
+                        create_thumbnail(file, filename, is_s3=False)
                     else:
                         flash(f'Failed to upload {file.filename}', 'error')
             elif file and file.filename:
@@ -430,6 +544,18 @@ def serve_file(filename):
     """Serve a file for viewing (local storage only)"""
     if app.config['STORAGE_TYPE'] == 'local' and allowed_file(filename):
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(filepath):
+            return send_file(filepath)
+
+    return "File not found", 404
+
+
+@app.route('/serve/thumbnails/<filename>')
+@login_required
+def serve_thumbnail(filename):
+    """Serve a thumbnail for viewing (local storage only)"""
+    if app.config['STORAGE_TYPE'] == 'local' and allowed_file(filename):
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails', filename)
         if os.path.exists(filepath):
             return send_file(filepath)
 

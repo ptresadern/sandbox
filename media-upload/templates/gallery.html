@@ -38,7 +38,7 @@
             {% for file in files %}
                 <div class="gallery-item" data-type="{{ file.type }}">
                     {% if file.type == 'image' %}
-                        <img src="{{ file.url }}" alt="{{ file.name }}" loading="lazy" onclick="openModal('{{ file.url }}', '{{ file.name }}', 'image')">
+                        <img src="{{ file.thumbnail_url }}" alt="{{ file.name }}" loading="lazy" onclick="openModal('{{ file.url }}', '{{ file.name }}', 'image')">
                     {% elif file.type == 'video' %}
                         <div class="video-thumbnail" onclick="openModal('{{ file.url }}', '{{ file.name }}', 'video')">
                             <div class="play-icon">▶</div>

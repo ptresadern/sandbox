@@ -51,7 +51,7 @@
                                 <td>
                                     <div class="admin-preview">
                                         {% if file.type == 'image' %}
-                                            <img src="{{ file.url }}" alt="{{ file.name }}">
+                                            <img src="{{ file.thumbnail_url }}" alt="{{ file.name }}">
                                         {% elif file.type == 'video' %}
                                             <div class="video-preview">
                                                 <span>🎬</span>
