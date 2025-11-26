@@ -108,6 +108,14 @@ def create_thumbnail(file, filename, is_s3=False):
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             img = Image.open(filepath)
 
+        # Apply EXIF orientation to fix rotated images
+        try:
+            from PIL import ImageOps
+            img = ImageOps.exif_transpose(img)
+        except Exception as e:
+            print(f"Could not apply EXIF orientation for {filename}: {e}")
+            # Continue without orientation correction
+
         # Convert RGBA to RGB if necessary (for JPEG compatibility)
         if img.mode in ('RGBA', 'LA', 'P'):
             background = Image.new('RGB', img.size, (255, 255, 255))
