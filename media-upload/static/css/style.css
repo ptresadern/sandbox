@@ -308,6 +308,13 @@ input[type="file"] {
 .gallery-controls {
     display: flex;
     align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
 }
 
@@ -316,7 +323,8 @@ input[type="file"] {
     color: var(--text-primary);
 }
 
-.column-selector {
+.column-selector,
+.per-page-selector {
     padding: 0.5rem 1rem;
     border: 2px solid var(--border-color);
     border-radius: 8px;
@@ -326,12 +334,14 @@ input[type="file"] {
     transition: border-color 0.3s;
 }
 
-.column-selector:focus {
+.column-selector:focus,
+.per-page-selector:focus {
     outline: none;
     border-color: var(--primary-color);
 }
 
-.column-selector:hover {
+.column-selector:hover,
+.per-page-selector:hover {
     border-color: var(--primary-color);
 }
 
@@ -407,6 +417,88 @@ input[type="file"] {
 .file-meta {
     color: var(--text-secondary);
     font-size: 0.875rem;
+}
+
+/* Pagination */
+.pagination-container {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    background: var(--card-background);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.pagination-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s;
+    border: 2px solid var(--primary-color);
+    display: inline-block;
+}
+
+.pagination-btn:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.pagination-btn.disabled {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.pagination-numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.pagination-number {
+    padding: 0.5rem 0.75rem;
+    background-color: white;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s;
+    min-width: 40px;
+    text-align: center;
+}
+
+.pagination-number:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.pagination-number.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    cursor: default;
+}
+
+.pagination-ellipsis {
+    padding: 0.5rem 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
 }
 
 /* Modal */
@@ -627,11 +719,39 @@ footer {
 
     .gallery-controls {
         width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .control-group {
+        width: 100%;
         justify-content: space-between;
     }
 
     .gallery-grid {
         gap: 1rem;
+    }
+
+    .pagination {
+        justify-content: center;
+        padding: 0.75rem;
+    }
+
+    .pagination-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+    }
+
+    .pagination-number {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.875rem;
+        min-width: 35px;
+    }
+
+    .pagination-container {
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
     }
 
     .admin-header {

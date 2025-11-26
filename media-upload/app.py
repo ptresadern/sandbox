@@ -241,13 +241,39 @@ def upload():
 @login_required
 def gallery():
     """Gallery page to view all uploaded media"""
-    files = get_media_files()
+    # Get pagination parameters from query string
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 25, type=int)
+
+    # Validate per_page value
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 25
+
+    # Get all files
+    all_files = get_media_files()
 
     # Add file type to each file
-    for file in files:
+    for file in all_files:
         file['type'] = get_file_type(file['name'])
 
-    return render_template('gallery.html', files=files)
+    # Calculate pagination
+    total_files = len(all_files)
+    total_pages = (total_files + per_page - 1) // per_page if total_files > 0 else 1
+
+    # Ensure page is within valid range
+    page = max(1, min(page, total_pages))
+
+    # Slice files for current page
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    files = all_files[start_idx:end_idx]
+
+    return render_template('gallery.html',
+                          files=files,
+                          page=page,
+                          per_page=per_page,
+                          total_files=total_files,
+                          total_pages=total_pages)
 
 
 @app.route('/admin')

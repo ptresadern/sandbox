@@ -6,20 +6,31 @@
 <div class="gallery-container">
     <h1>Phil & Rachel's Wedding Album</h1>
 
-    {% if files %}
+    {% if files or total_files > 0 %}
         <div class="gallery-stats">
             <div>
-                <p>Total items: {{ files|length }}</p>
+                <p>Showing {{ files|length }} of {{ total_files }} items (Page {{ page }} of {{ total_pages }})</p>
             </div>
             <div class="gallery-controls">
-                <label for="column-selector">Columns:</label>
-                <select id="column-selector" class="column-selector">
-                    <option value="2">2 Columns</option>
-                    <option value="3">3 Columns</option>
-                    <option value="4" selected>4 Columns</option>
-                    <option value="5">5 Columns</option>
-                    <option value="6">6 Columns</option>
-                </select>
+                <div class="control-group">
+                    <label for="per-page-selector">Items per page:</label>
+                    <select id="per-page-selector" class="per-page-selector">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="column-selector">Columns:</label>
+                    <select id="column-selector" class="column-selector">
+                        <option value="2">2 Columns</option>
+                        <option value="3">3 Columns</option>
+                        <option value="4" selected>4 Columns</option>
+                        <option value="5">5 Columns</option>
+                        <option value="6">6 Columns</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -41,6 +52,67 @@
                 </div>
             {% endfor %}
         </div>
+
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <div class="pagination-container">
+            <div class="pagination">
+                <!-- First and Previous buttons -->
+                {% if page > 1 %}
+                <a href="{{ url_for('gallery', page=1, per_page=per_page) }}" class="pagination-btn">
+                    <span>&laquo; First</span>
+                </a>
+                <a href="{{ url_for('gallery', page=page-1, per_page=per_page) }}" class="pagination-btn">
+                    <span>&lsaquo; Previous</span>
+                </a>
+                {% else %}
+                <span class="pagination-btn disabled">&laquo; First</span>
+                <span class="pagination-btn disabled">&lsaquo; Previous</span>
+                {% endif %}
+
+                <!-- Page Numbers -->
+                <div class="pagination-numbers">
+                    {% set start_page = [1, page - 2]|max %}
+                    {% set end_page = [total_pages, page + 2]|min %}
+
+                    {% if start_page > 1 %}
+                        <a href="{{ url_for('gallery', page=1, per_page=per_page) }}" class="pagination-number">1</a>
+                        {% if start_page > 2 %}
+                            <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                    {% endif %}
+
+                    {% for p in range(start_page, end_page + 1) %}
+                        {% if p == page %}
+                            <span class="pagination-number active">{{ p }}</span>
+                        {% else %}
+                            <a href="{{ url_for('gallery', page=p, per_page=per_page) }}" class="pagination-number">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if end_page < total_pages %}
+                        {% if end_page < total_pages - 1 %}
+                            <span class="pagination-ellipsis">...</span>
+                        {% endif %}
+                        <a href="{{ url_for('gallery', page=total_pages, per_page=per_page) }}" class="pagination-number">{{ total_pages }}</a>
+                    {% endif %}
+                </div>
+
+                <!-- Next and Last buttons -->
+                {% if page < total_pages %}
+                <a href="{{ url_for('gallery', page=page+1, per_page=per_page) }}" class="pagination-btn">
+                    <span>Next &rsaquo;</span>
+                </a>
+                <a href="{{ url_for('gallery', page=total_pages, per_page=per_page) }}" class="pagination-btn">
+                    <span>Last &raquo;</span>
+                </a>
+                {% else %}
+                <span class="pagination-btn disabled">Next &rsaquo;</span>
+                <span class="pagination-btn disabled">Last &raquo;</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     {% else %}
         <div class="empty-state">
             <h2>No media files yet</h2>
@@ -67,20 +139,36 @@
     const columnSelector = document.getElementById('column-selector');
     const galleryGrid = document.querySelector('.gallery-grid');
 
-    // Load saved preference or use default
-    const savedColumns = localStorage.getItem('galleryColumns') || '4';
-    columnSelector.value = savedColumns;
-    updateGalleryColumns(savedColumns);
+    if (columnSelector && galleryGrid) {
+        // Load saved preference or use default
+        const savedColumns = localStorage.getItem('galleryColumns') || '4';
+        columnSelector.value = savedColumns;
+        updateGalleryColumns(savedColumns);
 
-    // Listen for column changes
-    columnSelector.addEventListener('change', function() {
-        const columns = this.value;
-        updateGalleryColumns(columns);
-        localStorage.setItem('galleryColumns', columns);
-    });
+        // Listen for column changes
+        columnSelector.addEventListener('change', function() {
+            const columns = this.value;
+            updateGalleryColumns(columns);
+            localStorage.setItem('galleryColumns', columns);
+        });
 
-    function updateGalleryColumns(columns) {
-        galleryGrid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+        function updateGalleryColumns(columns) {
+            galleryGrid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+        }
+    }
+
+    // Per-page selector functionality
+    const perPageSelector = document.getElementById('per-page-selector');
+
+    if (perPageSelector) {
+        perPageSelector.addEventListener('change', function() {
+            const perPage = this.value;
+            // Redirect to page 1 with new per_page value
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', '1');
+            url.searchParams.set('per_page', perPage);
+            window.location.href = url.toString();
+        });
     }
 
     // Modal functions
