@@ -100,9 +100,8 @@ def create_thumbnail(file, filename, is_s3=False):
 
         # Open the image
         if is_s3:
-            # For S3, file is already a file object
+            # For S3, file is a BytesIO object
             img = Image.open(file)
-            file.seek(0)  # Reset file pointer for original upload
         else:
             # For local storage, open from saved file
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -331,14 +330,16 @@ def upload():
                 if app.config['STORAGE_TYPE'] == 's3':
                     # For S3, we need to read the file into memory
                     file_data = file.read()
-                    file_obj = io.BytesIO(file_data)
-                    file_obj.content_type = file.content_type
 
-                    if upload_to_s3(file_obj, filename):
+                    # Create separate BytesIO objects for upload and thumbnail
+                    file_obj_upload = io.BytesIO(file_data)
+                    file_obj_upload.content_type = file.content_type
+
+                    if upload_to_s3(file_obj_upload, filename):
                         uploaded_count += 1
-                        # Create thumbnail for images
-                        file_obj.seek(0)
-                        create_thumbnail(file_obj, filename, is_s3=True)
+                        # Create thumbnail for images using fresh BytesIO
+                        file_obj_thumb = io.BytesIO(file_data)
+                        create_thumbnail(file_obj_thumb, filename, is_s3=True)
                     else:
                         flash(f'Failed to upload {file.filename} to S3', 'error')
                 else:
